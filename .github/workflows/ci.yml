@@ -1,0 +1,25 @@
+name: Rust Zero-Dependency CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  verify-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Verify Zero External Dependencies
+        run: |
+          python3 -c '
+          import tomllib, pathlib
+          data = tomllib.loads(pathlib.Path("Cargo.toml").read_text())
+          assert not data.get("dependencies"), f"Expected zero dependencies, found: {data.get(\"dependencies\")}"
+          print("Zero external dependencies verified.")
+          '
+      - name: Run Release Unit & Integration Test Suite
+        run: cargo test --release
