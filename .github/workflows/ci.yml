@@ -6,20 +6,30 @@ on:
   pull_request:
     branches: [ main, master ]
 
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
 jobs:
   verify-and-test:
+    name: Zero-Dependency Build & Invariant Suite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust Stable
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Stable Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
+
       - name: Verify Zero External Dependencies
         run: |
           python3 -c '
           import tomllib, pathlib
           data = tomllib.loads(pathlib.Path("Cargo.toml").read_text())
-          assert not data.get("dependencies"), f"Expected zero dependencies, found: {data.get(\"dependencies\")}"
+          deps = data.get("dependencies")
+          assert not deps, f"Expected zero dependencies, found: {deps}"
           print("Zero external dependencies verified.")
           '
-      - name: Run Release Unit & Integration Test Suite
-        run: cargo test --release
+
+      - name: Run Unit & Integration Tests (Release)
+        run: cargo test --release -- --nocapture
